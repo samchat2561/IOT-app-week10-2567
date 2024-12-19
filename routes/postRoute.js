@@ -134,4 +134,34 @@ router.post('/update-post/:id', protectedRoute, upload.single('image'), async (r
         return res.redirect('/posts')
     }
 })
+
+//handle update a post request
+router.post('/delete-post/:id', protectedRoute, async (req, res) => {
+    try {
+        const postId = req.params.id
+        const post = await Post.findById(postId)
+
+        if (!post) {
+            req.flash('error', 'Post not found, try again!')
+            return res.redirect('/posts')
+        }
+
+        await User.updateOne({ _id: req.session.user._id }, { $pull: { posts: postId } })
+        await Post.deleteOne({ _id: postId })
+
+        unlink(path.join(process.cwd(), 'uploads') + '/' + post.image, (err) => {
+            if (err) {
+                console.error(err)
+            }
+        })
+
+        req.flash('success', 'Post deleted successfully!')
+        return res.redirect('/posts')
+
+    } catch (error) {
+        console.error(error)
+        req.flash('error', 'Something went wrong, try again!')
+        return res.redirect('/posts')
+    }
+})
 export default router
