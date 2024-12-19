@@ -21,6 +21,33 @@ const storage = multer.diskStorage({
 //initialize upload variable with the storage engine
 const upload = multer({ storage: storage })
 
+//route for home page
+router.get('/', async (req, res) => {
+    const page = parseInt(req.query.page) || 1
+    const limit = 2
+
+    const startIndex = (page - 1) * limit
+    const endindex = page * limit
+    const totalPosts = await Post.countDocuments().exec()
+
+    const posts = await Post.find()
+        .populate({ path: 'user', select: '-password' })
+        .sort({ _id: -1 })
+        .limit(limit)
+        .skip(startIndex)
+        .exec()
+
+    const pagination = {
+        currentPage: page,
+        totlaPage: Math.ceil(totalPosts / limit),
+        hasNextPage: endindex < totalPosts,
+        hasPrevPage: startIndex > 0,
+        nextPage: page + 1,
+        prevPage: page - 1
+    }
+    res.render('index', { title: 'Home page', active: 'home', posts, pagination })
+})
+
 //route for posts page
 router.get('/posts', protectedRoute, async (req, res) => {
     try {
@@ -180,7 +207,5 @@ router.post('/delete-post/:id', protectedRoute, async (req, res) => {
         return res.redirect('/posts')
     }
 })
-
-//handle update a post request
 
 export default router
