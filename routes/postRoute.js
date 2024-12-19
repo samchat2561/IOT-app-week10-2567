@@ -71,8 +71,24 @@ router.get('/edit-post/:id', protectedRoute, async (req, res) => {
 })
 
 //route for view posts page
-router.get('/post/:id', (req, res) => {
-    return res.render('posts/view-post', { title: 'View Post', active: 'view_post' })
+router.get('/post/:slug', async (req, res) => {
+    try {
+        const slug = req.params.slug
+        const post = await Post.findOne({ slug }).populate('user')
+
+        if (!post) {
+            req.flash('error', 'Post not found, try again!')
+            return res.redirect('/posts')
+        }
+
+        return res.render('posts/view-post', { title: 'View Post', active: 'view_post', post })
+
+    } catch (error) {
+        console.error(error)
+        req.flash('error', 'Post not found, try again!')
+        return res.redirect('/posts')
+    }
+
 })
 
 //handle create new post request
@@ -164,4 +180,7 @@ router.post('/delete-post/:id', protectedRoute, async (req, res) => {
         return res.redirect('/posts')
     }
 })
+
+//handle update a post request
+
 export default router
